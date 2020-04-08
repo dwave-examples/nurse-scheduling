@@ -1,6 +1,8 @@
-===========
-<demo_name>
-===========
+================
+Nurse Scheduling
+================
+
+THIS IS A WORK IN PROGRESS! ONLY TEMPLATE FILES HERE AT THE MOMENT.
 
 Short blurb on what this demo does.
 
