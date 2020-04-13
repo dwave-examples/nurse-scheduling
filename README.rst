@@ -45,6 +45,12 @@ Nurse  1     X        X     X           X
 Nurse  2  X     X                 X      
 ========= =  =  =  =  =  =  =  =  =  =  ==
 
+The results show the following:
+
+* One, and only one, nurse has been assigned to each day
+* No nurse works two days in a row
+* Two nurses work 4 days, and one works three days
+
 Usage
 -----
 
@@ -60,8 +66,16 @@ Code Overview
 
 Here is a general overview of the Nurse Scheduling code:
 
-* Here's an example bullet point
+* Assign the size of the problem (Number of nurses and days) and parameters
+* Compute the "penalty matrix" J
+* Develop the QUBO matrix
+* Run the problem
+* Compute the hard shift constraint sum
+* Compute the hard nurse constraint sum
+* Compute the soft nurse constraint sum
+* Print the nurse schedule
 
+Note that the total of the three constraint sums should equal the energy.
 
 Code Specifics
 --------------
