@@ -13,15 +13,18 @@ There are three overall constraints in the full problem:
 1) Both upper and lower limits on the number of breaks.
 2) The number of nurses on duty for each shift slot.
 3) For each individual nurse, upper and lower limits on the time interval 
-between days of duty
+between days of duty.
+
 The overall requirements combine to ensure that there are enough nurses
 on duty at all times, and that the individual nurses are not expected to work
 more than they can.
 
 The "hard shift" constraint requires that at least one nurse is assigned for
 each working day.
+
 The "hard nurse" constraint ensures that no nurse works two or more 
 consecutive days.
+
 The "soft nurse" constraint requires that all nurses should have roughly
 even work schedules.
 
