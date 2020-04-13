@@ -28,14 +28,23 @@ even work schedules.
 Running the demo results in the following output:
 
     Size  33
+
     Energy  0.5999999999999694
+
     Checking Hard shift constraint  0.0
+
     Checking Hard nurse constraint  0.0
+
     Checking Soft nurse constraint  0.6
+
                0  1  2  3  4  5  6  7  8  9  10
+
     Nurse  0            X     X     X     X   
+
     Nurse  1      X        X     X           X
+
     Nurse  2   X     X                 X      
+
 
 Usage
 -----
