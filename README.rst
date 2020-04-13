@@ -37,31 +37,28 @@ Running the demo results in the following output:
 
     Checking Soft nurse constraint  0.6
 
-               0  1  2  3  4  5  6  7  8  9  10
-
-    Nurse  0            X     X     X     X   
-
-    Nurse  1      X        X     X           X
-
-    Nurse  2   X     X                 X      
-
+========= =  =  =  =  =  =  =  =  =  =  ==
+   Day    0  1  2  3  4  5  6  7  8  9  10
+========= =  =  =  =  =  =  =  =  =  =  ==
+Nurse  0           X     X     X     X   
+Nurse  1     X        X     X           X
+Nurse  2  X     X                 X      
+========= =  =  =  =  =  =  =  =  =  =  ==
 
 Usage
 -----
 
-A simple command that runs the demo. For example,
+To run the demo, run the command
 
 .. code-block:: bash
 
-  python <demo_name>.py
+  python nurse_scheduling.py
 
 
 Code Overview
 -------------
 
-A general overview of how the code works.
-
-Prefer bite-sized descriptions in bullet points:
+Here is a general overview of the Nurse Scheduling code:
 
 * Here's an example bullet point
 
