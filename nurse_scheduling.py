@@ -109,7 +109,7 @@ for nurse_day_1 in range(SIZE):
 # Solve the problem, and use the offset to scale the energy
 e_offset = (lamda * N_DAYS * W * W) + (gamma * N_NURSES * F * F)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
-sampler = LeapHybridSampler(profile='hss')
+sampler = LeapHybridSampler()
 results = sampler.sample(bqm)
 
 # Get the results
