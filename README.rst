@@ -83,17 +83,18 @@ Note that the total of the three constraint sums should equal the energy.
 Code Specifics
 --------------
 
-Notable parts of the code implementation.
+Some notes on the code:
 
-This is the place to:
+* We use a vector to store the two-dimensional (nurse, day) matrix:
 
-* Highlight a part of the code implementation
-* Talk about unusual or potentially difficult parts of the code
-* Explain a code decision
+(0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
 
-Note: there is no need to repeat everything that is already well-documented in
-the code.
+in order to simplify the sums
 
+* The three constraint sums are separated out in order to be able to 
+confirm the individual effects
+
+* We have not yet confirmed Ikeda's results with reverse annealing
 
 References
 ----------
