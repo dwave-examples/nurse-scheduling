@@ -29,19 +29,18 @@ in the three general constraints.
 
 INH's three types of constraints are:
 
-The "hard shift" constraint requires that at least one nurse is assigned for
-each working day.
+1) "hard shift" constraint: requires that at least one nurse is assigned for
+   each working day.
 
-The "hard nurse" constraint ensures that no nurse works two or more 
-consecutive days.
+2) "hard nurse" constraint: ensures that no nurse works two or more 
+   consecutive days.
 
-The "soft nurse" constraint requires that all nurses should have roughly
-even work schedules.
+3) "soft nurse" constraint: requires that all nurses should have roughly
+   even work schedules.
 
 This demo seeks to obtain reasonable results for a nurse schedule, based on
-INH's model. In our implementation, the number of days is D, and the number 
-of nurses is N. We wish to find a schedule for the N nurses, on the D days, 
-which satisfies the following conditions:
+INH's model. Our implementation attempts to find a schedule for a number N 
+of nurses and a number D of days that satisfies the following conditions:
 
 * One, and only one, nurse has been assigned to each day (hard shift 
   constraint)
@@ -72,7 +71,10 @@ The results show the following:
 
 * One, and only one, nurse has been assigned to each day
 * No nurse works two days in a row
-* Two nurses work 4 days, and one works three days
+* Two nurses work 4 days, and one works three days. Because two nurses work
+  one extra day each, the soft nurse constraint is nonzero. Each nurse 
+  working one extra day contributes a total of gamma to the energy. Since
+  gamma is 0.3, the total energy is expected to be 0.6.
 
 Usage
 -----
@@ -110,9 +112,9 @@ Some notes on the code:
 (0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
 
 * The three constraint sums are separated out in order to be able to 
-confirm the individual effects manually. For example, if a nurse was
-assigned to two successive days, the hard nurse constraint sum would be
-nonzero.
+  confirm the individual effects manually. For example, if a nurse was
+  assigned to two successive days, the hard nurse constraint sum would be
+  nonzero.
 
 * We have not yet confirmed Ikeda's results with reverse annealing
 
