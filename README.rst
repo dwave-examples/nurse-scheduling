@@ -2,22 +2,32 @@
 Nurse Scheduling
 ================
 
-This is a demo of a nurse scheduling algorithm developed by Ikeda, Nakamura
-and Humble. The nurse scheduling problem seeks to find an optimal assignment
-for a group of nurses, under constraints of scheduling and personnel.
-The example is a simplified representation of a real-world nursing facility,
-but the model includes many parameters which are not explored here.
+This is a demo of a nurse scheduling model developed by Ikeda, Nakamura
+and Humble (IKH). 
 
-There are three overall constraints in the full problem:
+The nurse scheduling problem seeks to find an optimal assignment
+for a group of nurses, under constraints of scheduling and personnel.
+IKH developed a model which is a simplified representation of a real-world 
+nursing facility.
+
+In the general nurse scheduling problem, there are three types of constraints,
+which are mentioned here to provide background for IKH's constraints.
+These types of constraints, in the general problem, are:
 
 1) Both upper and lower limits on the number of breaks.
 2) The number of nurses on duty for each shift slot.
 3) For each individual nurse, upper and lower limits on the time interval 
-between days of duty.
+   between days of duty.
 
-The overall requirements combine to ensure that there are enough nurses
-on duty at all times, and that the individual nurses are not expected to work
-more than they can.
+These three types of constraints combine to ensure sufficient nurses
+on duty at all times, without overworking any particular nurse.
+
+IKH took these general constraints and formulated them as a QUBO.
+Their form of the constraints, discussed below, tries to achieve reasonable
+results for nurse scheduling, without implementing all the detail required 
+in the three general constraints.
+
+IKH's three types of constraints are:
 
 The "hard shift" constraint requires that at least one nurse is assigned for
 each working day.
@@ -28,7 +38,17 @@ consecutive days.
 The "soft nurse" constraint requires that all nurses should have roughly
 even work schedules.
 
-Running the demo results in the following output:
+This demo seeks to obtain reasonable results for a nurse schedule, based on
+IKH's model. In our implementation, the number of days is D, and the number 
+of nurses is N. We wish to find a schedule for the N nurses, on the D days, 
+which satisfies the following conditions:
+
+* One, and only one, nurse has been assigned to each day (hard shift 
+  constraint)
+* No nurse works two days in a row (hard nurse constraint)
+* The nurses should work the same number of days
+
+Running the demo results in the following output, at the command-line:
 
     Size  33
 
@@ -69,10 +89,10 @@ Code Overview
 
 Here is a general overview of the Nurse Scheduling code:
 
-* Assign the size of the problem (Number of nurses and days) and parameters
+* Assign the size of the problem (number of nurses and days) and parameters
 * Compute the "penalty matrix" J
 * Develop the QUBO matrix
-* Run the problem
+* Run the problem (solve the QUBO)
 * Compute the hard shift constraint sum
 * Compute the hard nurse constraint sum
 * Compute the soft nurse constraint sum
@@ -89,10 +109,10 @@ Some notes on the code:
 
 (0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
 
-in order to simplify the sums
-
 * The three constraint sums are separated out in order to be able to 
-confirm the individual effects
+confirm the individual effects manually. For example, if a nurse was
+assigned to two successive days, the hard nurse constraint sum would be
+nonzero.
 
 * We have not yet confirmed Ikeda's results with reverse annealing
 
