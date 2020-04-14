@@ -3,15 +3,15 @@ Nurse Scheduling
 ================
 
 This is a demo of a nurse scheduling model developed by Ikeda, Nakamura
-and Humble (IKH). 
+and Humble (INH). 
 
 The nurse scheduling problem seeks to find an optimal assignment
 for a group of nurses, under constraints of scheduling and personnel.
-IKH developed a model which is a simplified representation of a real-world 
+INH developed a model which is a simplified representation of a real-world 
 nursing facility.
 
 In the general nurse scheduling problem, there are three types of constraints,
-which are mentioned here to provide background for IKH's constraints.
+which are mentioned here to provide background for INH's constraints.
 These types of constraints, in the general problem, are:
 
 1) Both upper and lower limits on the number of breaks.
@@ -22,12 +22,12 @@ These types of constraints, in the general problem, are:
 These three types of constraints combine to ensure sufficient nurses
 on duty at all times, without overworking any particular nurse.
 
-IKH took these general constraints and formulated them as a QUBO.
+INH took these general constraints and formulated them as a QUBO.
 Their form of the constraints, discussed below, tries to achieve reasonable
 results for nurse scheduling, without implementing all the detail required 
 in the three general constraints.
 
-IKH's three types of constraints are:
+INH's three types of constraints are:
 
 The "hard shift" constraint requires that at least one nurse is assigned for
 each working day.
@@ -39,7 +39,7 @@ The "soft nurse" constraint requires that all nurses should have roughly
 even work schedules.
 
 This demo seeks to obtain reasonable results for a nurse schedule, based on
-IKH's model. In our implementation, the number of days is D, and the number 
+INH's model. In our implementation, the number of days is D, and the number 
 of nurses is N. We wish to find a schedule for the N nurses, on the D days, 
 which satisfies the following conditions:
 
