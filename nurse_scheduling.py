@@ -26,6 +26,8 @@ from dimod import BinaryQuadraticModel
 # count nurses n = 1 ... N_NURSES
 # count scheduling days as d = 1 ... N_DAYS
 # binary variable q_nd is the assignment of nurse n to day d
+# a is a positive correlation coefficient for implementing the hard nurse
+# constraint - value provided by Ikeda, Nakamura, Humble
 a = 3.5
 N_NURSES = 3
 N_DAYS = 11
@@ -39,7 +41,7 @@ SIZE = N_DAYS * N_NURSES
 # Lagrange parameter, for hard nurse constraint, on workforce and effort
 # Workforce function W(d) - set to a constant for now
 # Effort function E(n) - set to a constant for now
-lamda = 1.3
+lagrange_parameter = 1.3
 W = 1
 E = 1
 
@@ -49,6 +51,7 @@ E = 1
 # preference function G - set to a constant for now
 # Minimum duty days F - the number of work days that each nurse wants
 # to be scheduled. At present, each will do the minimum on average.
+# The parameter gamma's value suggested by Ikeda, Nakamura, Humble
 gamma = 0.3
 G = 1
 F = int(N_DAYS/N_NURSES)
@@ -84,16 +87,16 @@ for nurse_day_1 in range(SIZE):
         Q[nurse_day_1, nurse_day_2] = J[nurse_day_1, nurse_day_2]
 
 # Hard nurse constraint. The sum is over each day.
-# lamda * ((sum(E * q) - W) ** 2)
+# lagrange_parameter * ((sum(E * q) - W) ** 2)
 for nurse_day_1 in range(SIZE):
     _, date_index = get_nurse_and_day(nurse_day_1)
     # Diagonal term, without the W * W
-    Q[nurse_day_1, nurse_day_1] += lamda * (1 - (2 * W))
+    Q[nurse_day_1, nurse_day_1] += lagrange_parameter * (1 - (2 * W))
     for nurse_day_2 in range(SIZE):
         _, day_index_2 = get_nurse_and_day(nurse_day_2)
         # Include only the same day, across nurses
         if (date_index == day_index_2 and nurse_day_2 != nurse_day_1):
-            Q[nurse_day_1, nurse_day_2] += lamda * 2
+            Q[nurse_day_1, nurse_day_2] += lagrange_parameter * 2
 
 # Soft nurse constraint
 # gamma * ((sum(h * q) - F) ** 2)
@@ -107,13 +110,14 @@ for nurse_day_1 in range(SIZE):
             Q[nurse_day_1, nurse_day_2] += gamma * 2
 
 # Solve the problem, and use the offset to scale the energy
-e_offset = (lamda * N_DAYS * W * W) + (gamma * N_NURSES * F * F)
+e_offset = (lagrange_parameter * N_DAYS * W * W) + (gamma * N_NURSES * F * F)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
 sampler = LeapHybridSampler()
 results = sampler.sample(bqm)
 
 # Get the results
-smpl, energy = next(iter(results.data(['sample', 'energy'])))
+smpl = results.first.sample
+energy = results.first.energy
 print("Size ", SIZE)
 print("Energy ", energy)
 
@@ -132,7 +136,7 @@ for d in range(N_DAYS):
     sum_n = 0
     for n in range(N_NURSES):
         sum_n += E * smpl[indx(n, d)]
-    sum_w += lamda * (sum_n - W) * (sum_n - W)
+    sum_w += lagrange_parameter * (sum_n - W) * (sum_n - W)
 print("Checking Hard nurse constraint ", sum_w)
 
 sum_f = 0
