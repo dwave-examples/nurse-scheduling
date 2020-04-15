@@ -117,7 +117,7 @@ for nurse_day_1 in range(size):
 # Solve the problem, and use the offset to scale the energy
 e_offset = (lagrange_parameter * n_days * workforce * workforce) + (gamma * n_nurses * min_duty_days * min_duty_days)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
-sampler = LeapHybridSampler(profile='hss')
+sampler = LeapHybridSampler()
 results = sampler.sample(bqm)
 
 # Get the results
