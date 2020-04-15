@@ -35,11 +35,7 @@ n_nurses = 3
 n_days = 11
 size = n_days * n_nurses
 
-# Hard shift constraint: at least one nurse is working each day
-# implemented by penalizing any nurses scheduled on two successive
-# days
-
-# Hard nurse constraint: no nurse works two or more consecutive days
+# Hard shift constraint: at least one nurse working every day
 # Lagrange parameter, for hard nurse constraint, on workforce and effort
 # Workforce function W(d) - set to a constant 'workforce' for now
 # Effort function E(n) - set to a constant 'effort' for now
@@ -72,7 +68,7 @@ def get_nurse_and_day(index):
     return nurse_index, day_index
 
 
-# Hard shift constraint: at least one nurse is working each day
+# Hard nurse constraint: no nurse works two consecutive days
 # It does not have Lagrange parameter - instead, J matrix
 # symmetric, real-valued interaction matrix J, whereas all terms are
 # a or zero.
@@ -91,7 +87,7 @@ for nurse in range(n_nurses):
 # Q matrix assign the cost term, the J matrix
 Q = deepcopy(J)
 
-# Hard nurse constraint. The sum is over each day.
+# Hard shift constraint. The sum is over each day.
 # lagrange_parameter * ((sum(effort * q) - workforce) ** 2)
 for nurse_day_1 in range(size):
     _, date_index = get_nurse_and_day(nurse_day_1)
@@ -133,7 +129,7 @@ sum_j = 0
 for i in range(size):
     for j in range(size):
         sum_j += J[i, j] * smpl[i] * smpl[j]
-print("Checking Hard shift constraint ", sum_j)
+print("Checking Hard nurse constraint ", sum_j)
 
 sum_w = 0
 # workforce sum
@@ -142,7 +138,7 @@ for d in range(n_days):
     for n in range(n_nurses):
         sum_n += effort * smpl[get_index(n, d)]
     sum_w += lagrange_parameter * (sum_n - workforce) * (sum_n - workforce)
-print("Checking Hard nurse constraint ", sum_w)
+print("Checking Hard shift constraint ", sum_w)
 
 sum_f = 0
 # min_duty_days sum

@@ -53,9 +53,9 @@ Running the demo results in the following output, at the command-line:
 
     Energy  0.5999999999999694
 
-    Checking Hard shift constraint  0.0
-
     Checking Hard nurse constraint  0.0
+
+    Checking Hard shift constraint  0.0
 
     Checking Soft nurse constraint  0.6
 
@@ -72,7 +72,7 @@ The results show the following:
 * One, and only one, nurse has been assigned to each day
 * No nurse works two days in a row
 * Two nurses work 4 days, and one works three days. Because two nurses work
-  one extra day each, the soft nurse constraint is nonzero. Each nurse 
+  one extra day each, the soft nurse constraint energy is nonzero. Each nurse 
   working one extra day contributes a total of gamma to the energy. Since
   gamma is 0.3, the total energy is expected to be 0.6.
 
@@ -95,8 +95,8 @@ Here is a general overview of the Nurse Scheduling code:
 * Compute the "penalty matrix" J
 * Develop the QUBO matrix
 * Run the problem (solve the QUBO)
-* Compute the hard shift constraint sum
 * Compute the hard nurse constraint sum
+* Compute the hard shift constraint sum
 * Compute the soft nurse constraint sum
 * Print the nurse schedule
 
