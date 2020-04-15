@@ -109,7 +109,7 @@ Some notes on the code:
 
 * We use a vector to store the two-dimensional (nurse, day) matrix:
 
-(0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
+  (0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
 
 * The three constraint sums are separated out in order to be able to 
   confirm the individual effects manually. For example, if a nurse was
