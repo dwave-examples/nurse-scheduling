@@ -32,10 +32,10 @@ INH's three types of constraints are:
 1) "hard shift" constraint: requires that at least one nurse is assigned for
    each working day.
 
-2) "hard nurse" constraint: ensures that no nurse works two or more 
+2) "hard nurse" constraint: requires that no nurse works two or more 
    consecutive days.
 
-3) "soft nurse" constraint: requires that all nurses should have roughly
+3) "soft nurse" constraint: promotes that all nurses should have roughly
    even work schedules.
 
 This demo seeks to obtain reasonable results for a nurse schedule, based on
