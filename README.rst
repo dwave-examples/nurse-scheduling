@@ -22,10 +22,8 @@ These types of constraints, in the general problem, are:
 These three types of constraints combine to ensure sufficient nurses
 on duty at all times, without overworking any particular nurse.
 
-INH took these general constraints and formulated them as a QUBO.
-Their form of the constraints, discussed below, tries to achieve reasonable
-results for nurse scheduling, without implementing all the detail required 
-in the three general constraints.
+INH formulated a QUBO from a simplification of these constraints, discussed 
+below, that tries to achieve reasonable results for nurse scheduling.
 
 INH's three types of constraints are:
 
