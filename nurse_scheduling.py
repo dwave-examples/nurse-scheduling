@@ -96,12 +96,12 @@ Q = deepcopy(J)
 for nurse_day_1 in range(size):
     _, date_index = get_nurse_and_day(nurse_day_1)
     # Diagonal term, without the workforce * workforce
-    Q[nurse_day_1, nurse_day_1] += lagrange_parameter * (1 - (2 * workforce))
+    Q[nurse_day_1, nurse_day_1] += lagrange_parameter * ((effort * effort) - (2 * workforce * effort))
     for nurse_day_2 in range(size):
         _, day_index_2 = get_nurse_and_day(nurse_day_2)
         # Include only the same day, across nurses
         if (date_index == day_index_2 and nurse_day_2 != nurse_day_1):
-            Q[nurse_day_1, nurse_day_2] += lagrange_parameter * 2
+            Q[nurse_day_1, nurse_day_2] += 2 * lagrange_parameter * effort * effort
 
 # Soft nurse constraint: all nurses should have approximately even work
 #                        schedules
@@ -113,11 +113,11 @@ for nurse_day_1 in range(size):
 for nurse_day_1 in range(size):
     nurse_index_1, _ = get_nurse_and_day(nurse_day_1)
     # Diagonal term, without the min_duty_days * min_duty_days
-    Q[nurse_day_1, nurse_day_1] += gamma * (1 - (2 * min_duty_days))
+    Q[nurse_day_1, nurse_day_1] += gamma * ((preference * preference) - (2 * min_duty_days * preference))
     for nurse_day_2 in range(nurse_day_1 + 1, size):
         nurse_index_2, _ = get_nurse_and_day(nurse_day_2)
         if (nurse_index_1 == nurse_index_2 and nurse_day_2 != nurse_day_1):
-            Q[nurse_day_1, nurse_day_2] += gamma * 2
+            Q[nurse_day_1, nurse_day_2] += 2 * gamma * preference * preference
 
 # Solve the problem, and use the offset to scale the energy
 e_offset = (lagrange_parameter * n_days * workforce * workforce) + (gamma * n_nurses * min_duty_days * min_duty_days)
