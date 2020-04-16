@@ -87,7 +87,8 @@ for nurse in range(n_nurses):
 # Q matrix assign the cost term, the J matrix
 Q = deepcopy(J)
 
-# Hard shift constraint. The sum is over each day.
+# Hard shift constraint: at least one nurse working every day
+# The sum is over each day.
 # lagrange_parameter * ((sum(effort * q) - workforce) ** 2)
 for nurse_day_1 in range(size):
     _, date_index = get_nurse_and_day(nurse_day_1)
@@ -131,8 +132,8 @@ for i in range(size):
         sum_j += J[i, j] * smpl[i] * smpl[j]
 print("Checking Hard nurse constraint ", sum_j)
 
-sum_w = 0
 # workforce sum
+sum_w = 0
 for d in range(n_days):
     sum_n = 0
     for n in range(n_nurses):
@@ -140,8 +141,8 @@ for d in range(n_days):
     sum_w += lagrange_parameter * (sum_n - workforce) * (sum_n - workforce)
 print("Checking Hard shift constraint ", sum_w)
 
-sum_f = 0
 # min_duty_days sum
+sum_f = 0
 for n in range(n_nurses):
     sum_d = 0
     for d in range(n_days):
@@ -151,10 +152,10 @@ print("Checking Soft nurse constraint ", sum_f)
 
 # Graphics
 sched = [get_nurse_and_day(j) for j in range(size) if smpl[j] == 1]
-str_hdr = ""
+str_header_for_output = ""
 for d in range(n_days):
-    str_hdr += "  " + str(d)
-print("     ", "  ", str_hdr)
+    str_header_for_output += "  " + str(d)
+print("     ", "  ", str_header_for_output)
 for n in range(n_nurses):
     str_row = ""
     for d in range(n_days):

@@ -93,9 +93,12 @@ Here is a general overview of the Nurse Scheduling code:
 * Compute the "penalty matrix" J
 * Develop the QUBO matrix
 * Run the problem (solve the QUBO)
-* Compute the hard nurse constraint sum
-* Compute the hard shift constraint sum
-* Compute the soft nurse constraint sum
+* Calculate the hard nurse constraint sum, to check if the hard nurse
+  constraints are satisfied
+* Calculate the hard shift constraint sum, to check if the hard shift
+  constraints are satisfied
+* Calculate the soft nurse constraint sum, to check if the soft nurse
+  constraints are satisfied
 * Print the nurse schedule
 
 Note that the total of the three constraint sums should equal the energy.
