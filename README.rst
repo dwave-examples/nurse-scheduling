@@ -46,16 +46,16 @@ of nurses and a number D of days that satisfies the following conditions:
 * The nurses should work the same number of days
 
 Running the demo results in the following output, at the command-line:
+::
+  Size  33
 
-    Size  33
+  Energy  0.5999999999999694
 
-    Energy  0.5999999999999694
+  Checking Hard nurse constraint  0.0
 
-    Checking Hard nurse constraint  0.0
+  Checking Hard shift constraint  0.0
 
-    Checking Hard shift constraint  0.0
-
-    Checking Soft nurse constraint  0.6
+  Checking Soft nurse constraint  0.6
 
 ========= =  =  =  =  =  =  =  =  =  =  ==
    Day    0  1  2  3  4  5  6  7  8  9  10
