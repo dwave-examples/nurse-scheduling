@@ -89,7 +89,7 @@ Q = deepcopy(J)
 
 # Hard shift constraint: at least one nurse working every day
 # The sum is over each day.
-# This constraint tries to effort * sum(q_i) equal to workforce,
+# This constraint tries to make (effort * sum(q_i)) equal to workforce,
 # which is set to a constant in this implementation, so that one nurse
 # is working each day.
 # lagrange_parameter * ((sum(effort * q_i(n,d)) - workforce) ** 2)
