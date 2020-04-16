@@ -89,7 +89,10 @@ Q = deepcopy(J)
 
 # Hard shift constraint: at least one nurse working every day
 # The sum is over each day.
-# lagrange_parameter * ((sum(effort * q) - workforce) ** 2)
+# This constraint tries to effort * sum(q_i) equal to workforce,
+# which is set to a constant in this implementation, so that one nurse
+# is working each day.
+# lagrange_parameter * ((sum(effort * q_i(n,d)) - workforce) ** 2)
 for nurse_day_1 in range(size):
     _, date_index = get_nurse_and_day(nurse_day_1)
     # Diagonal term, without the workforce * workforce
@@ -100,8 +103,13 @@ for nurse_day_1 in range(size):
         if (date_index == day_index_2 and nurse_day_2 != nurse_day_1):
             Q[nurse_day_1, nurse_day_2] += lagrange_parameter * 2
 
-# Soft nurse constraint
-# gamma * ((sum(h * q) - min_duty_days) ** 2)
+# Soft nurse constraint: all nurses should have approximately even work
+#                        schedules
+# This constraint tries to make preference * sum(q_i) equal to min_duty_days,
+# so that the nurses have the same number of days. The sum of the q_i,
+# over the number of days, is each nurse's number of days worked in the
+# schedule.
+# gamma * ((sum(preference * q_i(n, d)) - min_duty_days) ** 2)
 for nurse_day_1 in range(size):
     nurse_index_1, _ = get_nurse_and_day(nurse_day_1)
     # Diagonal term, without the min_duty_days * min_duty_days
