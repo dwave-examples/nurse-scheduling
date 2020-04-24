@@ -37,8 +37,7 @@ INH's three types of constraints are:
    even work schedules.
 
 This demo seeks to obtain reasonable results for a nurse schedule, based on
-INH's model. Our implementation attempts to find a schedule for a number N 
-of nurses and a number D of days that satisfies the following conditions:
+INH's model. Our implementation attempts to find a schedule for a number ``n_nurses`` of nurses and a number ``n_days`` of days that satisfies the following conditions:
 
 * One, and only one, nurse has been assigned to each day (hard shift 
   constraint)
