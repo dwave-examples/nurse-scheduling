@@ -26,11 +26,9 @@ from collections import defaultdict
 from copy import deepcopy
 
 # Overall model variables: problem size
-# count nurses n = 1 ... n_nurses
-# count scheduling days as d = 1 ... n_days
 # binary variable q_nd is the assignment of nurse n to day d
-n_nurses = 3
-n_days = 11
+n_nurses = 3      # count nurses n = 1 ... n_nurses
+n_days = 11       # count scheduling days as d = 1 ... n_days
 size = n_days * n_nurses
 
 # Parameters for hard nurse constraint
@@ -40,34 +38,32 @@ a = 3.5
 
 # Parameters for hard shift constraint
 # Hard shift constraint: at least one nurse working every day
-# Lagrange parameter, for hard nurse constraint, on workforce and effort
-# Workforce function W(d) - set to a constant 'workforce' for now
-# Effort function E(n) - set to a constant 'effort' for now
-lagrange_parameter = 1.3
-workforce = 1
-effort = 1
+# Lagrange parameter, for hard shift constraint, on workforce and effort
+lagrange_hard_shift = 1.3
+workforce = 1     # Workforce function W(d) - set to a constant for now
+effort = 1        # Effort function E(n) - set to a constant for now
 
 # Parameters for soft nurse constraint
 # Soft nurse constraint: all nurses should have approximately even work
 #                        schedules
-# Lagrange parameter, for shift constraints, on work days
-# preference function 'preference' - set to a constant for now
+# Lagrange parameter, for shift constraints, on work days is called gamma
+# in the paper
 # Minimum duty days 'min_duty_days' - the number of work days that each
 # nurse wants
 # to be scheduled. At present, each will do the minimum on average.
 # The parameter gamma's value suggested by Ikeda, Nakamura, Humble
-gamma = 0.3
-preference = 1
+lagrange_soft_nurse = 0.3      # Lagrange parameter for soft nurse, gamma
+preference = 1                 # preference function - constant for now
 min_duty_days = int(n_days/n_nurses)
 
 
-# Find index into 1D list for (nurse_index, day_index)
+# Find composite index into 1D list for (nurse_index, day_index)
 def get_index(nurse_index, day_index):
     return nurse_index * n_days + day_index
 
 
-# Inverse of get_index - given an index in a 1D list, return the nurse_index
-# and day_index
+# Inverse of get_index - given a composite index in a 1D list, return the
+# nurse_index and day_index
 def get_nurse_and_day(index):
     nurse_index, day_index = divmod(index, n_days)
     return nurse_index, day_index
@@ -78,9 +74,6 @@ def get_nurse_and_day(index):
 # symmetric, real-valued interaction matrix J, whereas all terms are
 # a or zero.
 # composite indices i(n, d) and j(n, d) as functions of n and d
-# In other words, the indices are not n and d. They are kind of
-# (n+d)**2, and we need to take that into account. This seems to be
-# a clean way to do it.
 # J_i(n,d)j(n,d+1) = a and 0 otherwise.
 J = defaultdict(int)
 for nurse in range(n_nurses):
@@ -98,29 +91,39 @@ Q = deepcopy(J)
 # which is set to a constant in this implementation, so that one nurse
 # is working each day.
 # Overall hard shift constraint:
-# lagrange_parameter * sum_d ((sum_n(effort * q_i(n,d)) - workforce) ** 2)
+# lagrange_hard_shift * sum_d ((sum_n(effort * q_i(n,d)) - workforce) ** 2)
 #
 # with constant effort and constant workforce:
-# = lagrange_parameter * sum_d ( effort * sum_n q_i(n,d) - workforce ) ** 2
-# = lagrange_parameter * sum_d [ effort * effort * (sum_n q_i(n,d) ** 2)
+# = lagrange_hard_shift * sum_d ( effort * sum_n q_i(n,d) - workforce ) ** 2
+# = lagrange_hard_shift * sum_d [ effort ** 2 * (sum_n q_i(n,d) ** 2)
 #                              - 2 effort * workforce * sum_n q_i(n,d)
-#                              + workforce * workforce ]
+#                              + workforce ** 2 ]
 # The constant term is moved to the offset, below, right before we solve
 # the QUBO
 #
-# Expanding and merging the terms:
-# lagrange_parameter * (effort * effort - 2 effort * workforce) *
+# Expanding and merging the terms ( m is another sum over n ):
+# lagrange_hard_shift * (effort ** 2 - 2 effort * workforce) *
 # sum_d sum_n q_i(n,d)
-# + lagrange_parameter * effort * effort * sum_d sum_m sum_n q_i(n,d) q_j(m, d) #
-for nurse_day_1 in range(size):
-    _, date_index = get_nurse_and_day(nurse_day_1)
-    # Diagonal term, without the workforce * workforce
-    Q[nurse_day_1, nurse_day_1] += lagrange_parameter * ((effort * effort) - (2 * workforce * effort))
-    for nurse_day_2 in range(size):
-        _, day_index_2 = get_nurse_and_day(nurse_day_2)
-        # Include only the same day, across nurses
-        if (date_index == day_index_2 and nurse_day_2 != nurse_day_1):
-            Q[nurse_day_1, nurse_day_2] += 2 * lagrange_parameter * effort * effort
+# + lagrange_hard_shift * effort ** 2 * sum_d sum_m sum_n q_i(n,d) q_j(m, d) #
+
+# Diagonal terms in hard shift constraint, without the workforce*workforce term
+for nurse in range(n_nurses):
+    for day in range(n_days):
+        ind = get_index(nurse, day)
+        Q[ind, ind] += lagrange_hard_shift * (effort ** 2 - (2 * workforce * effort))
+
+# Off-diagonal terms in hard shift constraint
+# Include only the same day, across nurses
+for day in range(n_days):
+    for nurse1 in range(n_nurses):
+        for nurse2 in range(n_nurses):
+
+            if nurse1 >= nurse2:
+                continue
+
+            ind1 = get_index(nurse1, day)
+            ind2 = get_index(nurse2, day)
+            Q[ind1, ind2] += 2 * lagrange_hard_shift * effort ** 2
 
 # Soft nurse constraint: all nurses should have approximately even work
 #                        schedules
@@ -129,32 +132,42 @@ for nurse_day_1 in range(size):
 # over the number of days, is each nurse's number of days worked in the
 # schedule.
 # Overall soft nurse constraint:
-# gamma * sum_n ((sum_d(preference * q_i(n,d)) - min_duty_days) ** 2)
+# lagrange_soft_nurse * sum_n ((sum_d(preference * q_i(n,d)) - min_duty_days) ** 2)
 # with constant preference and constant min_duty_days:
-# = gamma * sum_n ( preference * sum_d q_i(n,d) - min_duty_days ) ** 2
-# = gamma * sum_n [ preference * preference * (sum_d q_i(n,d) ** 2)
+# = lagrange_soft_nurse * sum_n ( preference * sum_d q_i(n,d) - min_duty_days ) ** 2
+# = lagrange_soft_nurse * sum_n [ preference * preference * (sum_d q_i(n,d) ** 2)
 #                              - 2 preference * min_duty_days * sum_d q_i(n,d)
 #                              + min_duty_days * min_duty_days ]
 # The constant term is moved to the offset, below, right before we solve
 # the QUBO
 #
 # The square of the the sum_d term becomes:
-# Expanding and merging the terms:
-# = gamma * (preference * preference - 2 preference * min_duty_days) * sum_n sum_d q_i(n,d)
-# + gamma * preference * preference * sum_n sum_d1 sum_d2 q_i(n,d1)
+# Expanding and merging the terms (d1 and d2 are sums over d):
+# = lagrange_soft_nurse * (preference * preference - 2 preference * min_duty_days) * sum_n sum_d q_i(n,d)
+# + lagrange_soft_nurse * preference * preference * sum_n sum_d1 sum_d2 q_i(n,d1)
 #                      * q_j(n, d2)
 
-for nurse_day_1 in range(size):
-    nurse_index_1, _ = get_nurse_and_day(nurse_day_1)
-    # Diagonal term, without the min_duty_days * min_duty_days
-    Q[nurse_day_1, nurse_day_1] += gamma * ((preference * preference) - (2 * min_duty_days * preference))
-    for nurse_day_2 in range(nurse_day_1 + 1, size):
-        nurse_index_2, _ = get_nurse_and_day(nurse_day_2)
-        if (nurse_index_1 == nurse_index_2 and nurse_day_2 != nurse_day_1):
-            Q[nurse_day_1, nurse_day_2] += 2 * gamma * preference * preference
+# Diagonal terms in soft nurse constraint, without the min_duty_days**2 term
+for nurse in range(n_nurses):
+    for day in range(n_days):
+        ind = get_index(nurse, day)
+        Q[ind, ind] += lagrange_soft_nurse * (preference ** 2 - (2 * min_duty_days * preference))
+
+# Off-diagonal terms in soft nurse constraint
+# Include only the same nurse, across days
+for nurse in range(n_nurses):
+    for day1 in range(n_days):
+        for day2 in range(n_days):
+
+            if day1 >= day2:
+                continue
+
+            ind1 = get_index(nurse, day1)
+            ind2 = get_index(nurse, day2)
+            Q[ind1, ind2] += 2 * lagrange_soft_nurse * preference * preference
 
 # Solve the problem, and use the offset to scale the energy
-e_offset = (lagrange_parameter * n_days * workforce * workforce) + (gamma * n_nurses * min_duty_days * min_duty_days)
+e_offset = (lagrange_hard_shift * n_days * workforce * workforce) + (lagrange_soft_nurse * n_nurses * min_duty_days * min_duty_days)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
 sampler = LeapHybridSampler()
 results = sampler.sample(bqm)
@@ -180,7 +193,7 @@ for d in range(n_days):
     sum_n = 0
     for n in range(n_nurses):
         sum_n += effort * smpl[get_index(n, d)]
-    sum_w += lagrange_parameter * (sum_n - workforce) * (sum_n - workforce)
+    sum_w += lagrange_hard_shift * (sum_n - workforce) * (sum_n - workforce)
 print("Checking Hard shift constraint ", sum_w)
 
 # min_duty_days sum
@@ -189,17 +202,19 @@ for n in range(n_nurses):
     sum_d = 0
     for d in range(n_days):
         sum_d += preference * smpl[get_index(n, d)]
-    sum_f += gamma * (sum_d - min_duty_days) * (sum_d - min_duty_days)
+    sum_f += lagrange_soft_nurse * (sum_d - min_duty_days) * (sum_d - min_duty_days)
 print("Checking Soft nurse constraint ", sum_f)
 
 # Graphics
 sched = [get_nurse_and_day(j) for j in range(size) if smpl[j] == 1]
-str_header_for_output = ""
-for d in range(n_days):
-    str_header_for_output += "  " + str(d)
-print("     ", "  ", str_header_for_output)
+str_header_for_output = " " * 11
+str_header_for_output += "  ".join(map(str, range(n_days)))
+print(str_header_for_output)
 for n in range(n_nurses):
     str_row = ""
     for d in range(n_days):
-        str_row += "  " + ("X" if (n, d) in sched else " ")
+        outcome = "X" if (n, d) in sched else " "
+        if d > 9:
+            outcome += " "
+        str_row += "  " + outcome
     print("Nurse ", n, str_row)
