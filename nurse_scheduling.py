@@ -106,7 +106,7 @@ Q = deepcopy(J)
 # sum_d sum_n q_i(n,d)
 # + lagrange_hard_shift * effort ** 2 * sum_d sum_m sum_n q_i(n,d) q_j(m, d) #
 
-# Diagonal terms in hard shift constraint, without the workforce*workforce term
+# Diagonal terms in hard shift constraint, without the workforce**2 term
 for nurse in range(n_nurses):
     for day in range(n_days):
         ind = get_index(nurse, day)
@@ -116,10 +116,7 @@ for nurse in range(n_nurses):
 # Include only the same day, across nurses
 for day in range(n_days):
     for nurse1 in range(n_nurses):
-        for nurse2 in range(n_nurses):
-
-            if nurse1 >= nurse2:
-                continue
+        for nurse2 in range(nurse1 + 1, n_nurses):
 
             ind1 = get_index(nurse1, day)
             ind2 = get_index(nurse2, day)
@@ -135,16 +132,16 @@ for day in range(n_days):
 # lagrange_soft_nurse * sum_n ((sum_d(preference * q_i(n,d)) - min_duty_days) ** 2)
 # with constant preference and constant min_duty_days:
 # = lagrange_soft_nurse * sum_n ( preference * sum_d q_i(n,d) - min_duty_days ) ** 2
-# = lagrange_soft_nurse * sum_n [ preference * preference * (sum_d q_i(n,d) ** 2)
+# = lagrange_soft_nurse * sum_n [ preference ** 2 * (sum_d q_i(n,d) ** 2)
 #                              - 2 preference * min_duty_days * sum_d q_i(n,d)
-#                              + min_duty_days * min_duty_days ]
+#                              + min_duty_days ** 2 ]
 # The constant term is moved to the offset, below, right before we solve
 # the QUBO
 #
 # The square of the the sum_d term becomes:
 # Expanding and merging the terms (d1 and d2 are sums over d):
-# = lagrange_soft_nurse * (preference * preference - 2 preference * min_duty_days) * sum_n sum_d q_i(n,d)
-# + lagrange_soft_nurse * preference * preference * sum_n sum_d1 sum_d2 q_i(n,d1)
+# = lagrange_soft_nurse * (preference ** 2 - 2 preference * min_duty_days) * sum_n sum_d q_i(n,d)
+# + lagrange_soft_nurse * preference ** 2 * sum_n sum_d1 sum_d2 q_i(n,d1)
 #                      * q_j(n, d2)
 
 # Diagonal terms in soft nurse constraint, without the min_duty_days**2 term
@@ -157,17 +154,14 @@ for nurse in range(n_nurses):
 # Include only the same nurse, across days
 for nurse in range(n_nurses):
     for day1 in range(n_days):
-        for day2 in range(n_days):
-
-            if day1 >= day2:
-                continue
+        for day2 in range(day1 + 1, n_days):
 
             ind1 = get_index(nurse, day1)
             ind2 = get_index(nurse, day2)
-            Q[ind1, ind2] += 2 * lagrange_soft_nurse * preference * preference
+            Q[ind1, ind2] += 2 * lagrange_soft_nurse * preference ** 2
 
 # Solve the problem, and use the offset to scale the energy
-e_offset = (lagrange_hard_shift * n_days * workforce * workforce) + (lagrange_soft_nurse * n_nurses * min_duty_days * min_duty_days)
+e_offset = (lagrange_hard_shift * n_days * workforce ** 2) + (lagrange_soft_nurse * n_nurses * min_duty_days ** 2)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
 sampler = LeapHybridSampler()
 results = sampler.sample(bqm)
