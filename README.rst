@@ -117,7 +117,8 @@ Some notes on the code:
   (0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
 
 * The methods ``get_index`` and ``get_nurse_and_day`` are used to 
-  convert between (``nurse``, ``day``) tuples and the composite indices.
+  convert back and forth between (``nurse``, ``day``) tuples and the 
+  composite indices.
 
 * The three constraint sums are separated out in order to be able to 
   confirm the individual effects manually. For example, if a nurse was
