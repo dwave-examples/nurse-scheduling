@@ -111,10 +111,13 @@ Some notes on the code:
   indices ``i`` and ``j`` are composite indices. Each composite index
   is used to represent the combinations of the variables ``nurse`` and
   ``day``. The (``nurse``, ``day``) tuples are placed into the 
-  one-dimensional index in the following order, where nurse is first 
-  index, and day is second index, in the tuples:
+  one-dimensional index in the following order, where ``nurse`` is first 
+  index, and ``day`` is second index, in the tuples:
 
   (0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
+
+* The methods ``get_index`` and ``get_nurse_and_day`` are used to 
+  convert between (``nurse``, ``day``) tuples and the composite indices.
 
 * The three constraint sums are separated out in order to be able to 
   confirm the individual effects manually. For example, if a nurse was
