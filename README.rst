@@ -107,10 +107,12 @@ Code Specifics
 
 Some notes on the code:
 
-* We use a one-dimensional vector to store the two-dimensional (nurse, day) 
-  QUBO matrix. The (nurse, day) tuples are stored in the one-dimensional
-  vector in the following order, where nurse is first index, and day is 
-  second index, in the tuples:
+* We use a two-dimensional QUBO matrix, Q[``i``, ``j``], in which both 
+  indices ``i`` and ``j`` are composite indices. Each composite index
+  is used to represent the combinations of the variables ``nurse`` and
+  ``day``. The (``nurse``, ``day``) tuples are placed into the 
+  one-dimensional index in the following order, where nurse is first 
+  index, and day is second index, in the tuples:
 
   (0, 0) (0, 1) (0, 2)... (0, D) (1, 0) (1, 1)... (1, D)
 
