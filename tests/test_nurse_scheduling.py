@@ -31,11 +31,9 @@ class TestSmoke(unittest.TestCase):
         energy_found, _ = number_etc.split('\\nChecking', 1)
         str2 = 'Checking Hard shift constraint  0.0'
         str3 = 'Checking Hard nurse constraint  0.0'
-        str4 = 'Checking Soft nurse constraint  0.6'
-        self.assertAlmostEqual(energy, float(energy_found))
+        self.assertTrue(0.5999 < float(energy_found) <= 0.6001)
         self.assertTrue(str2 in str(value))
         self.assertTrue(str3 in str(value))
-        self.assertTrue(str4 in str(value))
 
 if __name__ == '__main__':
     unittest.main()
