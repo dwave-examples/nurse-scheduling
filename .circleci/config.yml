@@ -10,14 +10,14 @@ jobs:
 
   test-py39: &full-test-template
     docker:
-      - image: circleci/python:3.9-buster
+      - image: circleci/python:3.9
 
     working_directory: ~/repo/
 
     steps:
       - checkout
 
-      - restore_cache:
+      - restore_cache: &restore-cache-template
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
       - run: python -m virtualenv env
       - run: &install-dependences-template
@@ -25,7 +25,7 @@ jobs:
           command: |
             env/bin/pip install -r ./requirements.txt
             env/bin/pip install coverage
-      - save_cache:
+      - save_cache: &save-cache-template
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - env
@@ -35,22 +35,22 @@ jobs:
   test-py38:
     <<: *full-test-template
     docker:
-      - image: circleci/python:3.8-buster
+      - image: circleci/python:3.8
 
   test-py37:
     <<: *full-test-template
     docker:
-      - image: circleci/python:3.7-stretch
+      - image: circleci/python:3.7
 
   test-py36:
     <<: *full-test-template
     docker:
-      - image: circleci/python:3.6-jessie
+      - image: circleci/python:3.6
 
   test-py35:
     <<: *full-test-template
     docker:
-      - image: circleci/python:3.5-jessie
+      - image: circleci/python:3.5
 
   #
   # macOS
@@ -58,7 +58,7 @@ jobs:
 
   test-osx-py39: &osx-tests-template
     macos:
-      xcode: "11.2.1"
+      xcode: "12.2.0"
     environment:
       PYTHON: 3.9.0
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -73,10 +73,10 @@ jobs:
       # Install desired python version
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode-11.2.1
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode-12.2.0
       - run: pyenv install $PYTHON -s
       - save_cache:
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode-11.2.1
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode-12.2.0
           paths:
             - ~/.pyenv
 
@@ -90,13 +90,11 @@ jobs:
             python -m virtualenv env
 
       # Restore cache
-      - restore_cache:
-          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+      - restore_cache: *restore-cache-template
+
       - run: *install-dependences-template
-      - save_cache:
-          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-          paths:
-            - env
+
+      - save_cache: *save-cache-template
 
       - run: env/bin/coverage run -m unittest discover
 
@@ -160,8 +158,8 @@ jobs:
             .\python\tools\python.exe -m virtualenv env
 
       # Install requirements
-      - restore_cache:
-          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+      - restore_cache: *restore-cache-template
+
       - run: &win-install-dependencies-template
           name: install dependencies
           command: |
@@ -169,10 +167,8 @@ jobs:
             python --version
             pip install -r requirements.txt
             pip install coverage
-      - save_cache:
-          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-          paths:
-            - env
+      
+      - save_cache: *save-cache-template
 
       # Run tests
       - run: &win-run-unittests-template
@@ -205,17 +201,17 @@ workflows:
   version: 2.1
   tests:
     jobs:
-      - test-py39 
+      # - test-py39 
       - test-py38
       - test-py37
       - test-py36
       - test-py35
-      - test-osx-py39
+      # - test-osx-py39
       - test-osx-py38
       - test-osx-py37
       - test-osx-py36
       - test-osx-py35
-      - test-win-py39
+      # - test-win-py39
       - test-win-py38
       - test-win-py37
       - test-win-py36
