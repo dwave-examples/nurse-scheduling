@@ -14,6 +14,7 @@
 import os
 import subprocess
 import unittest
+import sys
 
 example_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -23,7 +24,7 @@ class TestSmoke(unittest.TestCase):
     def test_smoke(self):
         file_path = os.path.join(example_dir, 'nurse_scheduling.py')
 
-        value = subprocess.check_output(["python", file_path])
+        value = subprocess.check_output([sys.executable, file_path])
 
         # Check the expected energy
         energy = 0.6
