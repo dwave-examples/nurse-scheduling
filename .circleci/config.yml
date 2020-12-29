@@ -201,17 +201,17 @@ workflows:
   version: 2.1
   tests:
     jobs:
-      # - test-py39 
+      - test-py39 
       - test-py38
       - test-py37
       - test-py36
       - test-py35
-      # - test-osx-py39
+      - test-osx-py39
       - test-osx-py38
       - test-osx-py37
       - test-osx-py36
       - test-osx-py35
-      # - test-win-py39
+      - test-win-py39
       - test-win-py38
       - test-win-py37
       - test-win-py36
