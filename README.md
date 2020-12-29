@@ -1,3 +1,7 @@
+[![Linux/Mac/Windows build status](
+  https://circleci.com/gh/dwave-examples/nurse-scheduling.svg?style=svg)](
+  https://circleci.com/gh/dwave-examples/nurse-scheduling)
+
 # Nurse Scheduling
 
 This is a demo of a nurse scheduling model developed by Ikeda, Nakamura
