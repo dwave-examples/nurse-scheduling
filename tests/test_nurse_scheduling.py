@@ -18,23 +18,26 @@ import sys
 
 example_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
-class TestSmoke(unittest.TestCase):
-    # test that the example runs without failing
-    def test_smoke(self):
+class IntegrationTests(unittest.TestCase):
+    def test_scheduling(self):
         file_path = os.path.join(example_dir, 'nurse_scheduling.py')
 
-        value = subprocess.check_output([sys.executable, file_path])
+        output = str(subprocess.check_output([sys.executable, file_path]))
 
         # Check the expected energy
-        energy = 0.6
-        _, number_etc = str(value).split("Energy  ")
+        _, number_etc = output.split("Energy  ")
         energy_found, _ = number_etc.split('\\nChecking', 1)
+        energy_found = float(energy_found.rstrip("\\r"))
+
+        self.assertGreater(energy_found, 0.5999)
+        self.assertLessEqual(energy_found, 0.6001)
+
+        # Check constraints
         str2 = 'Checking Hard shift constraint  0.0'
         str3 = 'Checking Hard nurse constraint  0.0'
-        self.assertTrue(0.5999 < float(energy_found) <= 0.6001)
-        self.assertTrue(str2 in str(value))
-        self.assertTrue(str3 in str(value))
+
+        self.assertIn(str2, output)
+        self.assertIn(str3, output)
 
 if __name__ == '__main__':
     unittest.main()
