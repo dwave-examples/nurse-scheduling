@@ -164,7 +164,7 @@ for nurse in range(n_nurses):
 e_offset = (lagrange_hard_shift * n_days * workforce ** 2) + (lagrange_soft_nurse * n_nurses * min_duty_days ** 2)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
 sampler = LeapHybridSampler()
-results = sampler.sample(bqm)
+results = sampler.sample(bqm, label='Example - Nurse Scheduling')
 
 # Get the results
 smpl = results.first.sample
