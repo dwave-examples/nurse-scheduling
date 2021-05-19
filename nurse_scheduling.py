@@ -24,6 +24,8 @@ from dwave.system import LeapHybridSampler
 from dimod import BinaryQuadraticModel
 from collections import defaultdict
 from copy import deepcopy
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 # Overall model variables: problem size
 # binary variable q_nd is the assignment of nurse n to day d
@@ -68,7 +70,7 @@ def get_nurse_and_day(index):
     nurse_index, day_index = divmod(index, n_days)
     return nurse_index, day_index
 
-
+print("\nBuilding binary quadratic model...")
 # Hard nurse constraint: no nurse works two consecutive days
 # It does not have Lagrange parameter - instead, J matrix
 # symmetric, real-valued interaction matrix J, whereas all terms are
@@ -163,48 +165,86 @@ for nurse in range(n_nurses):
 # Solve the problem, and use the offset to scale the energy
 e_offset = (lagrange_hard_shift * n_days * workforce ** 2) + (lagrange_soft_nurse * n_nurses * min_duty_days ** 2)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
+
+print("\nSending problem to hybrid sampler...")
 sampler = LeapHybridSampler()
 results = sampler.sample(bqm, label='Example - Nurse Scheduling')
 
 # Get the results
 smpl = results.first.sample
-energy = results.first.energy
-print("Size ", size)
-print("Energy ", energy)
-
-
-# Check the results by doing the sums directly
-# J sum
-sum_j = 0
-for i in range(size):
-    for j in range(size):
-        sum_j += J[i, j] * smpl[i] * smpl[j]
-print("Checking Hard nurse constraint ", sum_j)
-
-# workforce sum
-sum_w = 0
-for d in range(n_days):
-    sum_n = 0
-    for n in range(n_nurses):
-        sum_n += effort * smpl[get_index(n, d)]
-    sum_w += lagrange_hard_shift * (sum_n - workforce) * (sum_n - workforce)
-print("Checking Hard shift constraint ", sum_w)
-
-# min_duty_days sum
-sum_f = 0
-for n in range(n_nurses):
-    sum_d = 0
-    for d in range(n_days):
-        sum_d += preference * smpl[get_index(n, d)]
-    sum_f += lagrange_soft_nurse * (sum_d - min_duty_days) * (sum_d - min_duty_days)
-print("Checking Soft nurse constraint ", sum_f)
+# energy = results.first.energy
 
 # Graphics
+print("\nBuilding schedule and checking constraints...\n")
 sched = [get_nurse_and_day(j) for j in range(size) if smpl[j] == 1]
-str_header_for_output = " " * 11
-str_header_for_output += "  ".join(map(str, range(n_days)))
-print(str_header_for_output)
-for n in range(n_nurses):
+
+def check_hard_shift_constraint(sched, n_days):
+
+    satisfied = [False] * n_days
+    for _, day in sched:
+        satisfied[day] = True
+
+    if all(satisfied):
+        return "Satisfied"
+    else:
+        return "Unsatisfied"
+
+def check_hard_nurse_constraint(sched, n_nurses):
+
+    satisfied = [True] * n_nurses
+    for nurse, day in sched:
+        if ((nurse, day+1) in sched) or ((nurse, day-1) in sched):
+            satisfied[nurse] = False
+    if all(satisfied):
+        return "Satisfied"
+    else:
+        return "Unsatisfied"
+
+def check_soft_nurse_constraint(sched, n_nurses):
+
+    num_shifts = [0] * n_nurses
+    for nurse, _ in sched:
+        num_shifts[nurse] += 1
+
+    if num_shifts.count(num_shifts[0]) == len(num_shifts):
+        return "Satisfied"
+    else:
+        return "Unsatisfied"
+
+print("\tHard shift constraint:", check_hard_shift_constraint(sched, n_days))
+print("\tHard nurse constraint:", check_hard_nurse_constraint(sched, n_nurses))
+print("\tSoft nurse constraint:", check_soft_nurse_constraint(sched, n_nurses))
+
+# Save image of schedule
+x,y = zip(*sched)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(y, x)
+width = 1
+height = 1
+for a_y, a_x in sched:
+    if a_y == 0:
+        ax.add_patch(Rectangle(
+            xy=(a_x-width/2, a_y-height/2) ,width=width, height=height,
+            linewidth=1, color='blue', fill=True))
+    elif a_y == 1:
+        ax.add_patch(Rectangle(
+            xy=(a_x-width/2, a_y-height/2) ,width=width, height=height,
+            linewidth=1, color='red', fill=True))
+    else:
+        ax.add_patch(Rectangle(
+            xy=(a_x-width/2, a_y-height/2) ,width=width, height=height,
+            linewidth=1, color='green', fill=True))
+ax.axis('equal')
+ax.set_xticks(range(n_days))
+ax.set_yticks(range(n_nurses))
+ax.set_xlabel("Shifts")
+ax.set_ylabel("Nurses")
+plt.savefig("schedule.png")
+
+# Print schedule to command-line
+print("\nSchedule:\n")
+for n in range(n_nurses-1, -1, -1):
     str_row = ""
     for d in range(n_days):
         outcome = "X" if (n, d) in sched else " "
@@ -212,3 +252,9 @@ for n in range(n_nurses):
             outcome += " "
         str_row += "  " + outcome
     print("Nurse ", n, str_row)
+
+str_header_for_output = " " * 11
+str_header_for_output += "  ".join(map(str, range(n_days)))
+print(str_header_for_output, "\n")
+
+print("Schedule saved as schedule.png.")

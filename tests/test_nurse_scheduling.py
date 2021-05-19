@@ -20,22 +20,20 @@ example_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class IntegrationTests(unittest.TestCase):
     @unittest.skipIf(os.getenv('SKIP_INT_TESTS'), "Skipping integration test.")
-    def test_scheduling(self):
+    def test_smoke(self):
+        """run nurse_scheduling.py and check that nothing crashes"""
+
+        demo_file = os.path.join(example_dir, 'nurse_scheduling.py')
+        subprocess.check_output([sys.executable, demo_file])
+    
+    def test_schedule(self):
         file_path = os.path.join(example_dir, 'nurse_scheduling.py')
 
         output = str(subprocess.check_output([sys.executable, file_path]))
 
-        # Check the expected energy
-        _, number_etc = output.split("Energy  ")
-        energy_found, _ = number_etc.split('\\nChecking', 1)
-        energy_found = float(energy_found.rstrip("\\r"))
-
-        self.assertGreater(energy_found, 0.5999)
-        self.assertLessEqual(energy_found, 0.6001)
-
         # Check constraints
-        str2 = 'Checking Hard shift constraint  0.0'
-        str3 = 'Checking Hard nurse constraint  0.0'
+        str2 = 'Hard shift constraint: Satisfied'
+        str3 = 'Hard nurse constraint: Satisfied'
 
         self.assertIn(str2, output)
         self.assertIn(str3, output)

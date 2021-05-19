@@ -49,31 +49,36 @@ conditions:
 Running the demo results in the following output, at the command-line:
 
 ```bash
-Size  33
+Building binary quadratic model...
 
-Energy  0.5999999999999694
+Sending problem to hybrid sampler...
 
-Checking Hard nurse constraint  0.0
+Building schedule and checking constraints...
 
-Checking Hard shift constraint  0.0
+	Hard shift constraint: Satisfied
+	Hard nurse constraint: Satisfied
+	Soft nurse constraint: Unsatisfied
 
-Checking Soft nurse constraint  0.6
+Schedule:
+
+Nurse  2         X        X     X     X    
+Nurse  1      X        X           X     X 
+Nurse  0   X        X        X             
+           0  1  2  3  4  5  6  7  8  9  10 
+
+Schedule saved as schedule.png.
 ```
-
-| Day     | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Nurse 0 |   |   |   | X |   | X |   | X |   | X |   |
-| Nurse 1 |   | X |   |   | X |   | X |   |   |   | X |
-| Nurse 2 | X |   | X |   |   |   |   |   | X |   |   |
 
 The results show the following:
 
 * One, and only one, nurse has been assigned to each day
 * No nurse works two days in a row
 * Two nurses work 4 days, and one works three days. Because two nurses work one
-  extra day each, the soft nurse constraint energy is nonzero. Each nurse
-  working one extra day contributes a total of gamma to the energy. Since gamma
-  is 0.3, the total energy is expected to be 0.6.
+  extra day each, the soft nurse constraint energy is unsatisfied.
+
+An image of the schedule (shown below) is saved to the file `schedule.png`.
+
+![Example Schedule](readme_imgs/schedule.png)
 
 ## Usage
 
