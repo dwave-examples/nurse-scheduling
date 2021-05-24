@@ -24,8 +24,16 @@ from dwave.system import LeapHybridSampler
 from dimod import BinaryQuadraticModel
 from collections import defaultdict
 from copy import deepcopy
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+import matplotlib
+
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+except ImportError:
+    matplotlib.use("agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+
 
 # Overall model variables: problem size
 # binary variable q_nd is the assignment of nurse n to day d
@@ -172,7 +180,6 @@ results = sampler.sample(bqm, label='Example - Nurse Scheduling')
 
 # Get the results
 smpl = results.first.sample
-# energy = results.first.energy
 
 # Graphics
 print("\nBuilding schedule and checking constraints...\n")

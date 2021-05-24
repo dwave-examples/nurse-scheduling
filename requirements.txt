@@ -1,1 +1,4 @@
 dwave-ocean-sdk>=3.3.0
+
+matplotlib==3.3.4; python_version>'3.5'
+matplotlib==3.0.3; python_version=='3.5'
