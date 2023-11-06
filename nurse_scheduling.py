@@ -50,7 +50,7 @@ a = 3.5
 # Hard shift constraint: at least one nurse working every day
 # Lagrange parameter, for hard shift constraint, on workforce and effort
 lagrange_hard_shift = 1.3
-workforce = 1     # Workforce function W(d) - set to a constant for now
+workforce_req = []     # Workforce requirements list for W(d)
 effort = 1        # Effort function E(n) - set to a constant for now
 
 # Parameters for soft nurse constraint
@@ -65,6 +65,13 @@ effort = 1        # Effort function E(n) - set to a constant for now
 lagrange_soft_nurse = 0.3      # Lagrange parameter for soft nurse, gamma
 preference = 1                 # preference function - constant for now
 min_duty_days = int(n_days/n_nurses)
+
+#Calculate workforce requirements. algos like Erlang C can be used here. Currently we are using a list for all n days.
+for i in range(n_days):
+    workforce_req.append(1)
+
+def workforce(day):    
+    return workforce_req[day]
 
 
 # Find composite index into 1D list for (nurse_index, day_index)
@@ -120,7 +127,7 @@ Q = deepcopy(J)
 for nurse in range(n_nurses):
     for day in range(n_days):
         ind = get_index(nurse, day)
-        Q[ind, ind] += lagrange_hard_shift * (effort ** 2 - (2 * workforce * effort))
+        Q[ind, ind] += lagrange_hard_shift * (effort ** 2 - (2 * workforce(day) * effort))
 
 # Off-diagonal terms in hard shift constraint
 # Include only the same day, across nurses
@@ -171,7 +178,7 @@ for nurse in range(n_nurses):
             Q[ind1, ind2] += 2 * lagrange_soft_nurse * preference ** 2
 
 # Solve the problem, and use the offset to scale the energy
-e_offset = (lagrange_hard_shift * n_days * workforce ** 2) + (lagrange_soft_nurse * n_nurses * min_duty_days ** 2)
+e_offset = (lagrange_hard_shift * n_days) + (lagrange_soft_nurse * n_nurses * min_duty_days ** 2)
 bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
 
 print("\nSending problem to hybrid sampler...")
