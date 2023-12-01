@@ -1,266 +1,152 @@
-# Copyright 2020 D-Wave Systems Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# This code includes an implementation of the algorithm described in Ikeda,
-# K., Nakamura, Y. & Humble, T.S. Application of Quantum Annealing to Nurse
-# Scheduling Problem. Sci Rep 9, 12837 (2019).
-# https://doi.org/10.1038/s41598-019-49172-3, © The Author(s) 2019, use of
-# which is licensed under a Creative Commons Attribution 4.0 International
-# License (To view a copy of this license, visit
-# http://creativecommons.org/licenses/by/4.0/).
-
 from dwave.system import LeapHybridSampler
 from dimod import BinaryQuadraticModel
 from collections import defaultdict
-from copy import deepcopy
-import matplotlib
+import matplotlib.pyplot as plt
 
-try:
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Rectangle
-except ImportError:
-    matplotlib.use("agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Rectangle
+# Define the number of scrutinizers and bills
+n_scrutinizerJunior = 2
+n_scrutinizerIntermediate = 3
+n_scrutinizerSenior = 1
+n_Scrutinizers = n_scrutinizerJunior + n_scrutinizerIntermediate + n_scrutinizerSenior
 
+n_billEasy = 2
+n_billMedium = 3
+n_billHard = 2
+nBills = n_billEasy + n_billMedium + n_billHard
 
-# binary variable q_nd is the assignment of nurse n to day d
-n_nurses = 3      # count nurses n = 1 ... n_nurses
-n_days = 11       # count scheduling days as d = 1 ... n_days
-size = n_days * n_nurses
+# Define the time limit for bills to be reviewed
+time_limit = 10
 
-# Parameters for hard nurse constraint
-# a is a positive correlation coefficient for implementing the hard nurse
-# constraint - value provided by Ikeda, Nakamura, Humble
-a = 3.5
+# Initialize QUBO matrix
+Q = defaultdict(int)
 
-# Parameters for hard shift constraint
-# Hard shift constraint: at least one nurse working every day
-# Lagrange parameter, for hard shift constraint, on workforce and effort
-lagrange_hard_shift = 1.3
-workforce = 1     # Workforce function W(d) - set to a constant for now
-effort = 1        # Effort function E(n) - set to a constant for now
+# Define constants for rewards and penalties
+reward = -1  # Reward for a valid assignment
+penalty = 10  # Penalty for an invalid assignment
+time_penalty = 1  # Penalty for exceeding the time limit
 
-# Parameters for soft nurse constraint
-# Soft nurse constraint: all nurses should have approximately even work
-#                        schedules
-# Lagrange parameter, for shift constraints, on work days is called gamma
-# in the paper
-# Minimum duty days 'min_duty_days' - the number of work days that each
-# nurse wants
-# to be scheduled. At present, each will do the minimum on average.
-# The parameter gamma's value suggested by Ikeda, Nakamura, Humble
-lagrange_soft_nurse = 0.3      # Lagrange parameter for soft nurse, gamma
-preference = 1                 # preference function - constant for now
-min_duty_days = int(n_days/n_nurses)
+# Define assignment variables
+variables = [(i, j) for i in range(n_Scrutinizers) for j in range(nBills)]
 
+# Function to get index of the QUBO matrix for a given variable
+def get_index(i, j):
+    return i * nBills + j
 
-# Find composite index into 1D list for (nurse_index, day_index)
-def get_index(nurse_index, day_index):
-    return nurse_index * n_days + day_index
+# Populate the QUBO matrix with rewards, penalties, and time constraints
+for i, j in variables:
+    index = get_index(i, j)
+    # Determine the scrutinizer's level and the bill's difficulty
+    level = 'Senior' if i < n_scrutinizerSenior else ('Intermediate' if i < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
+    difficulty = 'Hard' if j < n_billHard else ('Medium' if j < n_billHard + n_billMedium else 'Easy')
 
+    # Assign rewards and penalties based on the level and difficulty
+    if (level == 'Senior') or (level == 'Intermediate' and difficulty != 'Hard') or (level == 'Junior' and difficulty == 'Easy'):
+        Q[(index, index)] = reward
+    else:
+        Q[(index, index)] = penalty
 
-# Inverse of get_index - given a composite index in a 1D list, return the
-# nurse_index and day_index
-def get_nurse_and_day(index):
-    nurse_index, day_index = divmod(index, n_days)
-    return nurse_index, day_index
+    # Time penalties (simplified)
+    # For simplicity, assume each scrutinizer works in sequential order and each bill takes a day
+    if level == 'Junior':
+        capacity = 1  # Junior can check only easy bills
+    elif level == 'Intermediate':
+        capacity = 2  # Intermediate can check easy and medium bills
+    elif level == 'Senior':
+        capacity = 3  # Senior can check all bills
 
-print("\nBuilding binary quadratic model...")
-# Hard nurse constraint: no nurse works two consecutive days
-# It does not have Lagrange parameter - instead, J matrix
-# symmetric, real-valued interaction matrix J, whereas all terms are
-# a or zero.
-# composite indices i(n, d) and j(n, d) as functions of n and d
-# J_i(n,d)j(n,d+1) = a and 0 otherwise.
-J = defaultdict(int)
-for nurse in range(n_nurses):
-    for day in range(n_days - 1):
-        nurse_day_1 = get_index(nurse, day)
-        nurse_day_2 = get_index(nurse, day+1)
-        J[nurse_day_1, nurse_day_2] = a
+    for k in range(capacity, nBills):
+        # Only for bills that are beyond the scrutinizer's capacity
+        Q[(index, get_index(i, k))] += time_penalty
 
-# Q matrix assign the cost term, the J matrix
-Q = deepcopy(J)
+# Ensure each bill is assigned to only one scrutinizer
+for j in range(nBills):
+    for i in range(n_Scrutinizers):
+        for k in range(i+1, n_Scrutinizers):
+            Q[(get_index(i, j), get_index(k, j))] += penalty
 
-# Hard shift constraint: at least one nurse working every day
-# The sum is over each day.
-# This constraint tries to make (effort * sum(q_i)) equal to workforce,
-# which is set to a constant in this implementation, so that one nurse
-# is working each day.
-# Overall hard shift constraint:
-# lagrange_hard_shift * sum_d ((sum_n(effort * q_i(n,d)) - workforce) ** 2)
-#
-# with constant effort and constant workforce:
-# = lagrange_hard_shift * sum_d ( effort * sum_n q_i(n,d) - workforce ) ** 2
-# = lagrange_hard_shift * sum_d [ effort ** 2 * (sum_n q_i(n,d) ** 2)
-#                              - 2 effort * workforce * sum_n q_i(n,d)
-#                              + workforce ** 2 ]
-# The constant term is moved to the offset, below, right before we solve
-# the QUBO
-#
-# Expanding and merging the terms ( m is another sum over n ):
-# lagrange_hard_shift * (effort ** 2 - 2 effort * workforce) *
-# sum_d sum_n q_i(n,d)
-# + lagrange_hard_shift * effort ** 2 * sum_d sum_m sum_n q_i(n,d) q_j(m, d) #
+# Create the QUBO model
+bqm = BinaryQuadraticModel.from_qubo(Q)
 
-# Diagonal terms in hard shift constraint, without the workforce**2 term
-for nurse in range(n_nurses):
-    for day in range(n_days):
-        ind = get_index(nurse, day)
-        Q[ind, ind] += lagrange_hard_shift * (effort ** 2 - (2 * workforce * effort))
-
-# Off-diagonal terms in hard shift constraint
-# Include only the same day, across nurses
-for day in range(n_days):
-    for nurse1 in range(n_nurses):
-        for nurse2 in range(nurse1 + 1, n_nurses):
-
-            ind1 = get_index(nurse1, day)
-            ind2 = get_index(nurse2, day)
-            Q[ind1, ind2] += 2 * lagrange_hard_shift * effort ** 2
-
-# Soft nurse constraint: all nurses should have approximately even work
-#                        schedules
-# This constraint tries to make preference * sum(q_i) equal to min_duty_days,
-# so that the nurses have the same number of days. The sum of the q_i,
-# over the number of days, is each nurse's number of days worked in the
-# schedule.
-# Overall soft nurse constraint:
-# lagrange_soft_nurse * sum_n ((sum_d(preference * q_i(n,d)) - min_duty_days) ** 2)
-# with constant preference and constant min_duty_days:
-# = lagrange_soft_nurse * sum_n ( preference * sum_d q_i(n,d) - min_duty_days ) ** 2
-# = lagrange_soft_nurse * sum_n [ preference ** 2 * (sum_d q_i(n,d) ** 2)
-#                              - 2 preference * min_duty_days * sum_d q_i(n,d)
-#                              + min_duty_days ** 2 ]
-# The constant term is moved to the offset, below, right before we solve
-# the QUBO
-#
-# The square of the the sum_d term becomes:
-# Expanding and merging the terms (d1 and d2 are sums over d):
-# = lagrange_soft_nurse * (preference ** 2 - 2 preference * min_duty_days) * sum_n sum_d q_i(n,d)
-# + lagrange_soft_nurse * preference ** 2 * sum_n sum_d1 sum_d2 q_i(n,d1)
-#                      * q_j(n, d2)
-
-# Diagonal terms in soft nurse constraint, without the min_duty_days**2 term
-for nurse in range(n_nurses):
-    for day in range(n_days):
-        ind = get_index(nurse, day)
-        Q[ind, ind] += lagrange_soft_nurse * (preference ** 2 - (2 * min_duty_days * preference))
-
-# Off-diagonal terms in soft nurse constraint
-# Include only the same nurse, across days
-for nurse in range(n_nurses):
-    for day1 in range(n_days):
-        for day2 in range(day1 + 1, n_days):
-
-            ind1 = get_index(nurse, day1)
-            ind2 = get_index(nurse, day2)
-            Q[ind1, ind2] += 2 * lagrange_soft_nurse * preference ** 2
-
-# Solve the problem, and use the offset to scale the energy
-e_offset = (lagrange_hard_shift * n_days * workforce ** 2) + (lagrange_soft_nurse * n_nurses * min_duty_days ** 2)
-bqm = BinaryQuadraticModel.from_qubo(Q, offset=e_offset)
-
-print("\nSending problem to hybrid sampler...")
+# Solve the problem using a hybrid sampler
 sampler = LeapHybridSampler()
-results = sampler.sample(bqm, label='Example - Nurse Scheduling')
+results = sampler.sample(bqm, label='Example - Scrutinizer Assignment')
 
-# Get the results
-smpl = results.first.sample
 
-# Graphics
-print("\nBuilding schedule and checking constraints...\n")
-sched = [get_nurse_and_day(j) for j in range(size) if smpl[j] == 1]
+# Process the results
+sampleset = results.first.sample
+energy = results.first.energy
+print("Sample:", sampleset)
+print("Energy:", energy)
 
-def check_hard_shift_constraint(sched, n_days):
+# Function to convert sample to scrutinizer-bill assignments including time
+def sample_to_assignments_with_time(sample, n_Scrutinizers, nBills, time_limit):
+    assignments = {bill: None for bill in range(nBills)}  # Change to a dictionary mapping bills to a single scrutinizer
+    for index, value in sample.items():
+        if value and index < n_Scrutinizers * nBills:
+            scrutinizer, bill = divmod(index, nBills)
+            assignments[bill] = scrutinizer  # Assign the bill to one scrutinizer
+    return assignments
 
-    satisfied = [False] * n_days
-    for _, day in sched:
-        satisfied[day] = True
+# Convert sample to assignments including time
+assignments_with_time = sample_to_assignments_with_time(sampleset, n_Scrutinizers, nBills, time_limit)
 
-    if all(satisfied):
-        return "Satisfied"
-    else:
-        return "Unsatisfied"
+# Check the assignment validity to include skill level check
+def check_assignments(assignments, n_Scrutinizers, nBills):
+    # Check if every bill is assigned exactly once
+    if len(assignments) != nBills:
+        return False, "Not all bills are assigned."
+    # Check if bills are assigned according to skill level
+    for bill, scrutinizer in assignments.items():
+        if scrutinizer is not None:
+            level = 'Senior' if scrutinizer < n_scrutinizerSenior else ('Intermediate' if scrutinizer < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
+            difficulty = 'Hard' if bill < n_billHard else ('Medium' if bill < n_billHard + n_billMedium else 'Easy')
+            if (level == 'Junior' and difficulty != 'Easy') or (level == 'Intermediate' and difficulty == 'Hard'):
+                return False, f"Invalid assignment: {level} assigned to {difficulty} bill."
+    return True, "All assignments are valid."
 
-def check_hard_nurse_constraint(sched, n_nurses):
+# Check assignments
+is_valid, message = check_assignments(assignments_with_time, n_Scrutinizers, nBills)
+print(message)
 
-    satisfied = [True] * n_nurses
-    for nurse, day in sched:
-        if ((nurse, day+1) in sched) or ((nurse, day-1) in sched):
-            satisfied[nurse] = False
-    if all(satisfied):
-        return "Satisfied"
-    else:
-        return "Unsatisfied"
+# Define scrutinizer_labels
+scrutinizer_labels = [f"Scrutinizer {i+1}" for i in range(n_Scrutinizers)]
 
-def check_soft_nurse_constraint(sched, n_nurses):
 
-    num_shifts = [0] * n_nurses
-    for nurse, _ in sched:
-        num_shifts[nurse] += 1
 
-    if num_shifts.count(num_shifts[0]) == len(num_shifts):
-        return "Satisfied"
-    else:
-        return "Unsatisfied"
+# Visualization for assignments
+plt.figure(figsize=(12, 6))
 
-print("\tHard shift constraint:", check_hard_shift_constraint(sched, n_days))
-print("\tHard nurse constraint:", check_hard_nurse_constraint(sched, n_nurses))
-print("\tSoft nurse constraint:", check_soft_nurse_constraint(sched, n_nurses))
+# First subplot for Scrutinizer-Bill Assignments
+plt.subplot(1, 2, 1)
+for bill, scrutinizer in assignments_with_time.items():
+    if scrutinizer is not None:  # Only plot if there is an assignment
+        # Map the bill index to the correct x-position based on bill type
+        bill_x_position = n_billEasy if bill < n_billEasy else (n_billEasy + n_billMedium if bill < n_billEasy + n_billMedium else nBills)
+        plt.plot(bill_x_position, scrutinizer, 'bo')
 
-# Save image of schedule
-x,y = zip(*sched)
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.scatter(y, x)
-width = 1
-height = 1
-for a_y, a_x in sched:
-    if a_y == 0:
-        ax.add_patch(Rectangle(
-            xy=(a_x-width/2, a_y-height/2) ,width=width, height=height,
-            linewidth=1, color='blue', fill=True))
-    elif a_y == 1:
-        ax.add_patch(Rectangle(
-            xy=(a_x-width/2, a_y-height/2) ,width=width, height=height,
-            linewidth=1, color='red', fill=True))
-    else:
-        ax.add_patch(Rectangle(
-            xy=(a_x-width/2, a_y-height/2) ,width=width, height=height,
-            linewidth=1, color='green', fill=True))
-ax.axis('equal')
-ax.set_xticks(range(n_days))
-ax.set_yticks(range(n_nurses))
-ax.set_xlabel("Shifts")
-ax.set_ylabel("Nurses")
-plt.savefig("schedule.png")
+# Generate bill labels dynamically based on the number of each type
+bill_labels = ['Easy'] * n_billEasy + ['Medium'] * n_billMedium + ['Hard'] * n_billHard
 
-# Print schedule to command-line
-print("\nSchedule:\n")
-for n in range(n_nurses-1, -1, -1):
-    str_row = ""
-    for d in range(n_days):
-        outcome = "X" if (n, d) in sched else " "
-        if d > 9:
-            outcome += " "
-        str_row += "  " + outcome
-    print("Nurse ", n, str_row)
+# Set up the plot
+plt.xlabel('Bills')
+plt.ylabel('Scrutinizers')
+plt.xticks(range(nBills), bill_labels)
+plt.yticks(range(n_Scrutinizers), scrutinizer_labels)
+plt.title('Scrutinizer-Bill Assignments')
+plt.grid(True)
 
-str_header_for_output = " " * 11
-str_header_for_output += "  ".join(map(str, range(n_days)))
-print(str_header_for_output, "\n")
+# Second subplot for Bills per Scrutinizer
+plt.subplot(1, 2, 2)
+bill_count = [0] * n_Scrutinizers
+for bill, scrutinizer in assignments_with_time.items():
+    if scrutinizer is not None:
+        bill_count[scrutinizer] += 1
 
-print("Schedule saved as schedule.png.")
+plt.bar(scrutinizer_labels, bill_count)
+plt.xlabel('Scrutinizers')
+plt.ylabel('Number of Bills Assigned')
+plt.title('Bills per Scrutinizer')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
