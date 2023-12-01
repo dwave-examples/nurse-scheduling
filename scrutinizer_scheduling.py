@@ -35,7 +35,6 @@ except ImportError:
     from matplotlib.patches import Rectangle
 
 
-# Overall model variables: problem size
 # binary variable q_nd is the assignment of nurse n to day d
 n_nurses = 3      # count nurses n = 1 ... n_nurses
 n_days = 11       # count scheduling days as d = 1 ... n_days
