@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 
 # Define the number of scrutinizers and bills
 n_scrutinizerJunior = 2
-n_scrutinizerIntermediate = 3
+n_scrutinizerIntermediate = 2
 n_scrutinizerSenior = 1
 n_Scrutinizers = n_scrutinizerJunior + n_scrutinizerIntermediate + n_scrutinizerSenior
 
 n_billEasy = 2
 n_billMedium = 3
-n_billHard = 2
+n_billHard = 1
 nBills = n_billEasy + n_billMedium + n_billHard
 
 # Define the time limit for bills to be reviewed
@@ -71,7 +71,6 @@ bqm = BinaryQuadraticModel.from_qubo(Q)
 sampler = LeapHybridSampler()
 results = sampler.sample(bqm, label='Example - Scrutinizer Assignment')
 
-
 # Process the results
 sampleset = results.first.sample
 energy = results.first.energy
@@ -80,48 +79,39 @@ print("Energy:", energy)
 
 # Function to convert sample to scrutinizer-bill assignments including time
 def sample_to_assignments_with_time(sample, n_Scrutinizers, nBills, time_limit):
-    assignments = {bill: None for bill in range(nBills)}  # Change to a dictionary mapping bills to a single scrutinizer
+    assignments = defaultdict(list)  # Change to a dictionary mapping bills to a list of scrutinizers
     for index, value in sample.items():
         if value and index < n_Scrutinizers * nBills:
             scrutinizer, bill = divmod(index, nBills)
-            assignments[bill] = scrutinizer  # Assign the bill to one scrutinizer
+            assignments[scrutinizer].append(bill)  # Assign the bill to one scrutinizer
     return assignments
 
 # Convert sample to assignments including time
 assignments_with_time = sample_to_assignments_with_time(sampleset, n_Scrutinizers, nBills, time_limit)
 
-# Check the assignment validity to include skill level check
-def check_assignments(assignments, n_Scrutinizers, nBills):
-    # Check if every bill is assigned exactly once
-    if len(assignments) != nBills:
-        return False, "Not all bills are assigned."
-    # Check if bills are assigned according to skill level
-    for bill, scrutinizer in assignments.items():
-        if scrutinizer is not None:
-            level = 'Senior' if scrutinizer < n_scrutinizerSenior else ('Intermediate' if scrutinizer < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
-            difficulty = 'Hard' if bill < n_billHard else ('Medium' if bill < n_billHard + n_billMedium else 'Easy')
-            if (level == 'Junior' and difficulty != 'Easy') or (level == 'Intermediate' and difficulty == 'Hard'):
-                return False, f"Invalid assignment: {level} assigned to {difficulty} bill."
-    return True, "All assignments are valid."
-
-# Check assignments
-is_valid, message = check_assignments(assignments_with_time, n_Scrutinizers, nBills)
-print(message)
-
-# Define scrutinizer_labels
-scrutinizer_labels = [f"Scrutinizer {i+1}" for i in range(n_Scrutinizers)]
-
-
+# Define scrutinizer_labels with levels
+scrutinizer_labels_with_levels = []
+for i in range(n_Scrutinizers):
+    level = 'Senior' if i < n_scrutinizerSenior else ('Intermediate' if i < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
+    scrutinizer_labels_with_levels.append(f"Scrutinizer {i+1} ({level})")
 
 # Visualization for assignments
 plt.figure(figsize=(12, 6))
 
 # First subplot for Scrutinizer-Bill Assignments
 plt.subplot(1, 2, 1)
-for bill, scrutinizer in assignments_with_time.items():
-    if scrutinizer is not None:  # Only plot if there is an assignment
-        # Map the bill index to the correct x-position based on bill type
-        bill_x_position = n_billEasy if bill < n_billEasy else (n_billEasy + n_billMedium if bill < n_billEasy + n_billMedium else nBills)
+for scrutinizer, bills in assignments_with_time.items():
+    for bill in bills:
+        # Determine the correct x-position based on bill type
+        if bill < n_billEasy:
+            bill_type = 'Easy'
+            bill_x_position = bill  # Easy bill index
+        elif bill < n_billEasy + n_billMedium:
+            bill_type = 'Medium'
+            bill_x_position = bill - n_billEasy  # Medium bill index after adjusting for easy bills
+        else:
+            bill_type = 'Hard'
+            bill_x_position = bill - (n_billEasy + n_billMedium)  # Hard bill index after adjusting for easy and medium bills
         plt.plot(bill_x_position, scrutinizer, 'bo')
 
 # Generate bill labels dynamically based on the number of each type
@@ -130,23 +120,28 @@ bill_labels = ['Easy'] * n_billEasy + ['Medium'] * n_billMedium + ['Hard'] * n_b
 # Set up the plot
 plt.xlabel('Bills')
 plt.ylabel('Scrutinizers')
-plt.xticks(range(nBills), bill_labels)
-plt.yticks(range(n_Scrutinizers), scrutinizer_labels)
+plt.xticks(range(nBills), bill_labels, rotation=45)
+plt.yticks(range(n_Scrutinizers), scrutinizer_labels_with_levels)
 plt.title('Scrutinizer-Bill Assignments')
 plt.grid(True)
 
 # Second subplot for Bills per Scrutinizer
 plt.subplot(1, 2, 2)
-bill_count = [0] * n_Scrutinizers
-for bill, scrutinizer in assignments_with_time.items():
-    if scrutinizer is not None:
-        bill_count[scrutinizer] += 1
 
-plt.bar(scrutinizer_labels, bill_count)
+# Initialize bill count with zeros
+bill_count = [0] * n_Scrutinizers
+
+# Fill in the bill_count with the number of bills for each scrutinizer
+for scrutinizer, bills in assignments_with_time.items():
+    bill_count[scrutinizer] = len(bills)
+
+# Plotting the bar chart
+plt.bar(scrutinizer_labels_with_levels, bill_count)
 plt.xlabel('Scrutinizers')
 plt.ylabel('Number of Bills Assigned')
 plt.title('Bills per Scrutinizer')
 plt.xticks(rotation=45)
 
 plt.tight_layout()
+plt.savefig("scrutinizer_bill_assignments.png", format='png')
 plt.show()
