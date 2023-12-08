@@ -20,10 +20,11 @@ time_limit = 10
 # Initialize QUBO matrix
 Q = defaultdict(int)
 
-# Define constants for rewards and penalties
-reward = -2  # Reward for a valid assignment
-penalty = 30  # Penalty for an invalid assignment
-time_penalty = 1  # Penalty for exceeding the time limit
+# Constants for rewards and penalties
+reward = -10  # Increased reward for a valid assignment
+penalty = 100  # Increased penalty for an invalid assignment
+hard_bill_senior_penalty = 100  # High penalty for non-senior scrutinizer assigned hard bill
+time_penalty = 2  # Increased penalty for exceeding the time limit
 
 # Define assignment variables
 variables = [(i, j) for i in range(n_Scrutinizers) for j in range(nBills)]
@@ -39,12 +40,18 @@ for i, j in variables:
     level = 'Senior' if i < n_scrutinizerSenior else ('Intermediate' if i < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
     difficulty = 'Hard' if j < n_billHard else ('Medium' if j < n_billHard + n_billMedium else 'Easy')
 
-    # Assign rewards and penalties based on the level and difficulty
-    if (level == 'Senior') or (level == 'Intermediate' and difficulty != 'Hard') or (level == 'Junior' and difficulty == 'Easy'):
+    # Senior scrutinizers get a reward for reviewing any bill
+    if level == 'Senior':
+        Q[(index, index)] = reward
+    # Intermediate and junior get a reward only for medium and easy bills, respectively
+    elif (level == 'Intermediate' and difficulty != 'Hard') or (level == 'Junior' and difficulty == 'Easy'):
         Q[(index, index)] = reward
     else:
-        Q[(index, index)] = penalty
-
+        # Penalty for intermediate and junior scrutinizers if assigned hard bills
+        if difficulty == 'Hard':
+            Q[(index, index)] = hard_bill_senior_penalty
+        else:
+            Q[(index, index)] = penalty
 
     # Time penalties (simplified)
     # For simplicity, assume each scrutinizer works in sequential order and each bill takes a day
