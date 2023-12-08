@@ -21,8 +21,8 @@ time_limit = 10
 Q = defaultdict(int)
 
 # Define constants for rewards and penalties
-reward = -1  # Reward for a valid assignment
-penalty = 10  # Penalty for an invalid assignment
+reward = -2  # Reward for a valid assignment
+penalty = 30  # Penalty for an invalid assignment
 time_penalty = 1  # Penalty for exceeding the time limit
 
 # Define assignment variables
@@ -44,6 +44,7 @@ for i, j in variables:
         Q[(index, index)] = reward
     else:
         Q[(index, index)] = penalty
+
 
     # Time penalties (simplified)
     # For simplicity, assume each scrutinizer works in sequential order and each bill takes a day
@@ -95,47 +96,44 @@ for i in range(n_Scrutinizers):
     level = 'Senior' if i < n_scrutinizerSenior else ('Intermediate' if i < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
     scrutinizer_labels_with_levels.append(f"Scrutinizer {i+1} ({level})")
 
+# Initialize bill count with zeros for each scrutinizer
+bill_count = [0] * n_Scrutinizers
+
+# Update bill count based on assignments
+for scrutinizer, bills in assignments_with_time.items():
+    bill_count[scrutinizer] = len(bills)
+
 # Visualization for assignments
 plt.figure(figsize=(12, 6))
 
 # First subplot for Scrutinizer-Bill Assignments
 plt.subplot(1, 2, 1)
+legend_labels = set()  # Keep track of legend labels to avoid duplicates
 for scrutinizer, bills in assignments_with_time.items():
     for bill in bills:
         # Determine the correct x-position based on bill type
-        if bill < n_billEasy:
-            bill_type = 'Easy'
-            bill_x_position = bill  # Easy bill index
-        elif bill < n_billEasy + n_billMedium:
-            bill_type = 'Medium'
-            bill_x_position = bill - n_billEasy  # Medium bill index after adjusting for easy bills
+        bill_type = 'Hard' if bill < n_billHard else ('Medium' if bill < n_billHard + n_billMedium else 'Easy')
+        label = f"{bill_type} (Bill {bill})"
+        if label not in legend_labels:
+            plt.plot(bill, scrutinizer, 'o', label=label)
+            legend_labels.add(label)
         else:
-            bill_type = 'Hard'
-            bill_x_position = bill - (n_billEasy + n_billMedium)  # Hard bill index after adjusting for easy and medium bills
-        plt.plot(bill_x_position, scrutinizer, 'bo')
-
-# Generate bill labels dynamically based on the number of each type
-bill_labels = ['Easy'] * n_billEasy + ['Medium'] * n_billMedium + ['Hard'] * n_billHard
+            plt.plot(bill, scrutinizer, 'o')
 
 # Set up the plot
 plt.xlabel('Bills')
 plt.ylabel('Scrutinizers')
-plt.xticks(range(nBills), bill_labels, rotation=45)
+plt.xticks(range(nBills), ['Easy'] * n_billEasy + ['Medium'] * n_billMedium + ['Hard'] * n_billHard, rotation=45)
 plt.yticks(range(n_Scrutinizers), scrutinizer_labels_with_levels)
 plt.title('Scrutinizer-Bill Assignments')
 plt.grid(True)
+plt.legend(loc='upper right')  # Move legend to avoid overlapping
+plt.xlim(-1, nBills)  # Set x-axis limits to include all bills
+plt.ylim(-1, n_Scrutinizers)  # Set y-axis limits to include all scrutinizers
+
 
 # Second subplot for Bills per Scrutinizer
 plt.subplot(1, 2, 2)
-
-# Initialize bill count with zeros
-bill_count = [0] * n_Scrutinizers
-
-# Fill in the bill_count with the number of bills for each scrutinizer
-for scrutinizer, bills in assignments_with_time.items():
-    bill_count[scrutinizer] = len(bills)
-
-# Plotting the bar chart
 plt.bar(scrutinizer_labels_with_levels, bill_count)
 plt.xlabel('Scrutinizers')
 plt.ylabel('Number of Bills Assigned')
