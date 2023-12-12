@@ -21,7 +21,7 @@ junior_wrong_assignment_penalty = 10000  # Penalty for junior assigned non-easy 
 intermediate_wrong_assignment_penalty = 5000  # Penalty for intermediate assigned hard bills
 senior_wrong_assignment_penalty = 100000  # Lesser penalty for senior assigned wrong bills (as they can handle all)
 unique_assignment_penalty = 20000  # Penalty for assigning a bill to more than one scrutinizer
-time_limit = 10 # Penalty for simple time constraint
+time_limit = 0 # Penalty for simple time constraint, not implemented
 
 # Initialize QUBO matrix
 Q = defaultdict(int)
