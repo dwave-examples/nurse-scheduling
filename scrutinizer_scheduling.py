@@ -3,6 +3,7 @@ from dwave.system import LeapHybridSampler
 from dimod import BinaryQuadraticModel
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import itertools
 
 # Define the number of scrutinizers and bills
 n_scrutinizerJunior = 2
@@ -22,6 +23,8 @@ intermediate_wrong_assignment_penalty = 5000  # Penalty for intermediate assigne
 senior_wrong_assignment_penalty = 100000  # Lesser penalty for senior assigned wrong bills (as they can handle all)
 unique_assignment_penalty = 20000  # Penalty for assigning a bill to more than one scrutinizer
 time_limit = 0 # Penalty for simple time constraint, not implemented
+exceed_capacity_penalty = 0.5  # low penalty to discourage over-assignment
+
 
 # Initialize QUBO matrix
 Q = defaultdict(int)
@@ -59,6 +62,30 @@ for i, j in variables:
         for i in range(n_Scrutinizers):
             for k in range(i+1, n_Scrutinizers):
                 Q[(get_index(i, j), get_index(k, j))] += unique_assignment_penalty
+
+# Function to calculate the capacity based on the level of the scrutinizer
+def get_capacity(level):
+    if level == 'Junior':
+        return 1  # Junior can check only easy bills
+    elif level == 'Intermediate':
+        return 2  # Intermediate can check easy and medium bills
+    elif level == 'Senior':
+        return 3  # Senior can check all bills
+
+# Apply capacity penalties to the QUBO matrix
+for i in range(n_Scrutinizers):
+    level = 'Senior' if i < n_scrutinizerSenior else ('Intermediate' if i < n_scrutinizerSenior + n_scrutinizerIntermediate else 'Junior')
+    capacity = get_capacity(level)
+    
+    # Calculate over-assignment penalties
+    for bill_combination in itertools.combinations(range(nBills), capacity + 1):
+        for bill in bill_combination:
+            index_i = get_index(i, bill)
+            for other_bill in bill_combination:
+                if bill != other_bill:
+                    index_j = get_index(i, other_bill)
+                    # Penalize the combination of assignments that exceed capacity
+                    Q[(index_i, index_j)] += exceed_capacity_penalty
 
 print(Q)
 
