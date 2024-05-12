@@ -130,11 +130,7 @@ Some notes on the code:
 
 * We have not yet confirmed Ikeda's results with reverse annealing
 
-## References
 
-Ikeda, K., Nakamura, Y. & Humble, T.S. Application of Quantum Annealing to Nurse
-Scheduling Problem. Sci Rep 9, 12837 (2019).
-https://doi.org/10.1038/s41598-019-49172-3
 
 ## License
 
